@@ -6,7 +6,7 @@ $pdo = Capsule::connection()->getPdo();
 $pdo->beginTransaction();
 
 // IP do servidor que vai chamar o script por curl
-$ipspermitido = ["45.179.88.234"];
+$ipspermitido = ["127.0.0.1"];
 
 $ip = $_GET["ip"];
 
@@ -26,9 +26,10 @@ if(!empty($ip)){
 	if(in_array($ipremoto, $ipspermitido)){
 
 		// Pega o IP e procura pelo ID do produto na database
-		$sql = $pdo->prepare("SELECT * FROM tblhosting WHERE dedicatedip = :ip AND domainstatus = 'Active'");
+		$sql = $pdo->prepare("SELECT * FROM tblhosting WHERE dedicatedip = :dedicatedip OR assignedips LIKE :assignedips AND domainstatus = 'Active'");
 		$sql->execute(array(
-			":ip" => $ip
+			":dedicatedip" => $ip,
+			":assignedips" => "%".$ip."%"
 		));
 		$sql->execute();
 		
@@ -38,7 +39,10 @@ if(!empty($ip)){
 		if(!empty($id)){
 			$results = localAPI("SendEmail", array(
 				"messagename" => "DDOs Guard",
-				"id" => $id["id"]
+				"id" => $id["id"],
+				"customvars" => base64_encode(serialize(array(
+					"guardnotify_ip" => $ip
+				)))
 			));
 			echo "Alerta enviado para cliente com sucesso";
 		}
